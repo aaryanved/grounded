@@ -2,6 +2,9 @@
 .env
 config.js
 
+# Face Scanning Models
+models/
+
 docs/
 
 .DS_Store
