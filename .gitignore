@@ -1,6 +1,5 @@
 # API key
 .env
-config.js
 
 # Face Scanning Models
 models/
