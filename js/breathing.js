@@ -1,6 +1,4 @@
-let _animEl   = null;
-let _sphereEl = null;
-let _labelEl  = null;
+let _labelEl = null;
 
 let _phaseTimer = null;
 let _isRunning  = false;
@@ -9,9 +7,7 @@ let _inhaleMs = 4000;
 let _exhaleMs = 4000;
 
 export function initBreathing() {
-  _sphereEl = document.getElementById("breathing-ball");
-  _animEl   = _sphereEl?.querySelector("a-animation");
-  _labelEl  = document.getElementById("breathing-text");
+  _labelEl = document.getElementById("breathing-text");
 }
 
 export function setBreathingSpeed(stressLevel) {
@@ -26,22 +22,6 @@ export function setBreathingSpeed(stressLevel) {
     _exhaleMs = 6000;
   }
 
-  const cycleDur = _inhaleMs + _exhaleMs;
-
-  if (_animEl) {
-    _animEl.setAttribute("dur", cycleDur);
-    _animEl.setAttribute("from", "1 1 1");
-    _animEl.setAttribute("to",   "1.6 1.6 1.6");
-  }
-
-  if (_sphereEl) {
-    const color = stressLevel > 0.7
-      ? "#e05c7e"
-      : stressLevel > 0.4
-        ? "#6c63ff"
-        : "#4a9eff";
-    _sphereEl.setAttribute("color", color);
-  }
 }
 
 export function startBreathingGuide() {

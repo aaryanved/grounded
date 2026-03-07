@@ -1,3 +1,4 @@
+import { initScene }                                                                                         from "./scene.js";
 import { initCamera, loadModels, getUserState, pauseScanning, resumeScanning, getCalmCount, resetCalmCount } from "./sensing.js";
 import { generateCalmingInstruction }           from "./ai.js";
 import { speak, getAudioContext }               from "./voice.js";
@@ -8,9 +9,11 @@ import {
   stopBreathingGuide,
 } from "./breathing.js";
 
+initScene();
+
 const MONITOR_INTERVAL_MS      = 1000;
 const INTERVENTION_COOLDOWN_MS = 15000;
-const CALM_EXIT_READS          = 5;
+const CALM_EXIT_READS          = 10;
 const PANIC_THRESHOLDS = {
   stressLevel: 0.6,
   emotions:    ["fearful", "angry", "disgusted", "sad", "surprised"],
@@ -42,7 +45,10 @@ startBtn.addEventListener("click", async () => {
 homeBtn.addEventListener("click", () => stopSession());
 
 document.getElementById("calm-exit-yes").addEventListener("click", () => stopSession());
-document.getElementById("calm-exit-no").addEventListener("click", () => hideCalmExitPrompt());
+document.getElementById("calm-exit-no").addEventListener("click", () => {
+  hideCalmExitPrompt();
+  resetCalmCount();
+});
 
 async function init() {
   updateSessionStatus("Requesting camera...", false);
