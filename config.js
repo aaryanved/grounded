@@ -5,3 +5,8 @@
 export const GEMINI_API_KEY     = "AIzaSyAjwr1nFDKdbzNGkGxwffQ3OsIVqtDY7Ys";
 export const ELEVENLABS_API_KEY = "sk_391e60c6b8a669b9b67df8e99f6f0bd3220665c208e1bc4e";
 export const PRESAGE_API_KEY    = "DJ05k5aeTZ7Voge9zw7743lTQh6R5WA86Py1Z6Kw";
+
+// optional: override the Gemini model you want to hit.  if omitted the code
+// defaults to "gemini-3-flash-preview" which was known-good earlier.
+// e.g. export const GEMINI_MODEL = "gemini-3.5";
+export const GEMINI_MODEL       = null; // set to a model name string to override

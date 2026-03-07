@@ -8,11 +8,16 @@ import {
   stopBreathingGuide,
 } from "./breathing.js";
 
-const MONITOR_INTERVAL_MS      = 1500;
-const INTERVENTION_COOLDOWN_MS = 30000;
+const MONITOR_INTERVAL_MS      = 1000;  // check every second for faster detection
+const INTERVENTION_COOLDOWN_MS = 15000; // allow intervention every 15 seconds (was 30)
+// thresholds used to decide when to trigger an intervention.  Previously only
+// fearful/angry/disgusted states would fire even if they weren't the dominant
+// face expression; we now also consider *sad*, *surprised* and make the list easier to
+// maintain.
 const PANIC_THRESHOLDS = {
-  stressLevel: 0.6,
-  emotions:    ["fearful", "angry", "disgusted"],
+  stressLevel: 0.45,  // lowered from 0.6 for faster triggering
+  // any of these emotions (dominant or not) will immediately count as panic
+  emotions:    ["fearful", "angry", "disgusted", "sad", "surprised"],
 };
 
 let monitorIntervalId    = null;
@@ -146,7 +151,8 @@ async function triggerIntervention(state) {
     console.error("[main] Speech failed:", err);
   }
 
-  setTimeout(hideInterventionText, 8000);
+  // Hide text immediately when voice finishes (speak() waits for audio to end)
+  hideInterventionText();
 
   sessionDot.className     = "session-dot active";
   sessionLabel.textContent = "Monitoring active";
