@@ -1,0 +1,13 @@
+# API key
+.env
+config.js
+
+docs/
+
+.DS_Store
+Thumbs.db
+
+.vscode/
+.idea/
+*.swp
+*.swo
