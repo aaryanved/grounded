@@ -1,4 +1,4 @@
-import { initCamera, loadModels, getUserState }  from "./sensing.js";
+import { initCamera, loadModels, getUserState, pauseScanning, resumeScanning, getCalmCount, resetCalmCount } from "./sensing.js";
 import { generateCalmingInstruction }           from "./ai.js";
 import { speak, getAudioContext }               from "./voice.js";
 import {
@@ -8,25 +8,20 @@ import {
   stopBreathingGuide,
 } from "./breathing.js";
 
-const MONITOR_INTERVAL_MS      = 1000;  // check every second for faster detection
-const INTERVENTION_COOLDOWN_MS = 15000; // allow intervention every 15 seconds (was 30)
-// thresholds used to decide when to trigger an intervention.  Previously only
-// fearful/angry/disgusted states would fire even if they weren't the dominant
-// face expression; we now also consider *sad*, *surprised* and make the list easier to
-// maintain.
+const MONITOR_INTERVAL_MS      = 1000;
+const INTERVENTION_COOLDOWN_MS = 15000;
+const CALM_EXIT_READS          = 5;
 const PANIC_THRESHOLDS = {
-  stressLevel: 0.45,  // lowered from 0.6 for faster triggering
-  // any of these emotions (dominant or not) will immediately count as panic
+  stressLevel: 0.6,
   emotions:    ["fearful", "angry", "disgusted", "sad", "surprised"],
 };
 
-let monitorIntervalId    = null;
-let lastInterventionTime = 0;
-let ambientStarted       = false;
-let ambientNodes         = [];
-let calmStreakStart      = null;
-let _calmPromptShown     = false;
-const CALM_EXIT_MS       = 15000;
+let monitorIntervalId        = null;
+let lastInterventionTime     = 0;
+let ambientStarted           = false;
+let ambientNodes             = [];
+let _calmPromptShown         = false;
+let _interventionInProgress  = false;
 
 const videoEl          = document.getElementById("webcam");
 const startScreen      = document.getElementById("start-screen");
@@ -90,9 +85,10 @@ function stopSession() {
   stopAmbientAudio();
   stopBreathingGuide();
 
-  calmStreakStart  = null;
-  _calmPromptShown = false;
-  lastInterventionTime = 0;
+  _calmPromptShown        = false;
+  _interventionInProgress = false;
+  lastInterventionTime    = 0;
+  resetCalmCount();
 
   hideInterventionText();
   hideCalmExitPrompt();
@@ -112,22 +108,23 @@ function monitorLoop() {
     PANIC_THRESHOLDS.emotions.includes(state.emotion);
 
   if (isPanic) {
-    calmStreakStart = null;
+    resetCalmCount();
     if (_calmPromptShown) hideCalmExitPrompt();
     const now = Date.now();
-    if (now - lastInterventionTime > INTERVENTION_COOLDOWN_MS) {
+    if (now - lastInterventionTime > INTERVENTION_COOLDOWN_MS && !_interventionInProgress) {
       lastInterventionTime = now;
       triggerIntervention(state);
     }
   } else {
-    calmStreakStart = calmStreakStart ?? Date.now();
-    if (!_calmPromptShown && Date.now() - calmStreakStart >= CALM_EXIT_MS) {
+    if (!_calmPromptShown && getCalmCount() >= CALM_EXIT_READS) {
       showCalmExitPrompt();
     }
   }
 }
 
 async function triggerIntervention(state) {
+  _interventionInProgress = true;
+  pauseScanning();
   console.log("[main] Triggering intervention:", state);
 
   sessionDot.className     = "session-dot intervening";
@@ -135,27 +132,32 @@ async function triggerIntervention(state) {
 
   setBreathingSpeed(state.stressLevel);
 
-  let instruction;
   try {
-    instruction = await generateCalmingInstruction(state);
-  } catch (err) {
-    console.error("[main] AI generation failed:", err);
-    instruction = "You are safe. Take a slow breath in, and let it go.";
+    let instruction;
+    try {
+      instruction = await generateCalmingInstruction(state);
+    } catch (err) {
+      console.error("[main] AI generation failed:", err);
+      instruction = "You are safe. Take a slow breath in, and let it go.";
+    }
+
+    showInterventionText(instruction);
+
+    try {
+      await speak(instruction, state.stressLevel);
+    } catch (err) {
+      console.error("[main] Speech failed:", err);
+    }
+
+    // Hide text immediately when voice finishes (speak() waits for audio to end)
+    hideInterventionText();
+
+    sessionDot.className     = "session-dot active";
+    sessionLabel.textContent = "Monitoring active";
+    resumeScanning();
+  } finally {
+    _interventionInProgress = false;
   }
-
-  showInterventionText(instruction);
-
-  try {
-    await speak(instruction, state.stressLevel);
-  } catch (err) {
-    console.error("[main] Speech failed:", err);
-  }
-
-  // Hide text immediately when voice finishes (speak() waits for audio to end)
-  hideInterventionText();
-
-  sessionDot.className     = "session-dot active";
-  sessionLabel.textContent = "Monitoring active";
 }
 
 
@@ -165,8 +167,16 @@ function _stressClass(stressLevel) {
   return "calm";
 }
 
+function _stressLabel(stressLevel) {
+  if (stressLevel < 0.2)  return "Very Calm";
+  if (stressLevel < 0.45) return "Calm";
+  if (stressLevel < 0.65) return "Mildly Stressed";
+  if (stressLevel < 0.85) return "Stressed";
+  return "Very Stressed";
+}
+
 function updateOverlay(state) {
-  emotionBadge.textContent = `${state.emotion} · ${Math.round(state.stressLevel * 100)}%`;
+  emotionBadge.textContent = `${_stressLabel(state.stressLevel)} · ${Math.round(state.stressLevel * 100)}%`;
   emotionBadge.className   = "status-badge " + _stressClass(state.stressLevel);
   stressBar.style.width    = `${Math.round(state.stressLevel * 100)}%`;
 }
@@ -192,7 +202,6 @@ function showCalmExitPrompt() {
 
 function hideCalmExitPrompt() {
   _calmPromptShown = false;
-  calmStreakStart  = null;
   calmExitModal.classList.remove("visible");
 }
 

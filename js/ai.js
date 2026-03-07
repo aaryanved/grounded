@@ -4,7 +4,7 @@ import { GEMINI_API_KEY, GEMINI_MODEL as CONFIG_MODEL } from "../config.js";
 // return 404 for the key we're using, which means the model isn't enabled for
 // the project.  keep the model configurable via config.js so you can swap it
 // without editing source.
-const DEFAULT_MODEL = "gemini-3-flash-preview"; // previously working in repo history
+const DEFAULT_MODEL = "gemini-2.5-flash"; // stable model with generous free-tier quota
 const GEMINI_MODEL = CONFIG_MODEL || DEFAULT_MODEL;
 const GEMINI_ENDPOINT =
   `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;

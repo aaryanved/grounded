@@ -1,4 +1,4 @@
-const _state = { emotion: "neutral", stressLevel: 0, expressions: {}, ready: false };
+const _state = { emotion: "neutral", stressLevel: 0, expressions: {}, ready: false, paused: false, calmCount: 0 };
 
 function computeStressFromExpressions(expr) {
   const score =
@@ -28,6 +28,8 @@ export async function loadModels(videoEl) {
   await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
 
   setInterval(async () => {
+    if (_state.paused) return;
+
     const result = await faceapi
       .detectSingleFace(videoEl, new faceapi.TinyFaceDetectorOptions())
       .withFaceLandmarks(true)
@@ -39,31 +41,28 @@ export async function loadModels(videoEl) {
     }
 
     const expressions = result.expressions;
-  // start with the naturally dominant emotion reported by face-api
-  const dominant = Object.entries(expressions)
-      .sort(([, a], [, b]) => b - a)[0][0];
+    const dominant = Object.entries(expressions).sort(([, a], [, b]) => b - a)[0][0];
 
-  // if any of the 'panic' emotions exceed a reasonable threshold we want
-  // the user state to reflect that even when they're not the absolute
-  // winner, otherwise main.js never triggers an intervention.
-  const PANIC_OVERRIDE_THRESHOLD = 0.4;  // lowered from 0.6 for faster sensitivity
-  const PANIC_EMOTIONS = ["disgusted", "angry", "fearful", "sad", "surprised"];
-  let finalEmotion = dominant;
-  for (const em of PANIC_EMOTIONS) {
-    if ((expressions[em] ?? 0) > PANIC_OVERRIDE_THRESHOLD) {
-      finalEmotion = em;
-      break;
+    const PANIC_OVERRIDE_THRESHOLD = 0.65;
+    const PANIC_EMOTIONS = ["fearful", "angry", "disgusted", "sad", "surprised"];
+    let finalEmotion = dominant;
+    for (const em of PANIC_EMOTIONS) {
+      if ((expressions[em] ?? 0) > PANIC_OVERRIDE_THRESHOLD) {
+        finalEmotion = em;
+        break;
+      }
     }
-  }
 
-  const stress = computeStressFromExpressions(expressions);
+    const stress = computeStressFromExpressions(expressions);
+    const isCalm = !PANIC_EMOTIONS.includes(finalEmotion) && stress < 0.45;
+    _state.calmCount = isCalm ? _state.calmCount + 1 : 0;
 
-  console.log(`[sensing] emotion=${finalEmotion} stress=${stress.toFixed(3)}`, expressions);
+    console.log(`[sensing] emotion=${finalEmotion} stress=${stress.toFixed(3)} calmStreak=${_state.calmCount}`, expressions);
 
-  _state.emotion     = finalEmotion;
-  _state.stressLevel = stress;
-  _state.expressions = expressions;
-  }, 3000);  // detect every 3 seconds instead of every 1 second for smoother, more stable emotion detection
+    _state.emotion     = finalEmotion;
+    _state.stressLevel = stress;
+    _state.expressions = expressions;
+  }, 3000);
 
 
   _state.ready = true;
@@ -81,3 +80,8 @@ export function getUserState() {
 export function isSensingReady() {
   return _state.ready;
 }
+
+export function pauseScanning()  { _state.paused = true; }
+export function resumeScanning() { _state.paused = false; }
+export function getCalmCount()   { return _state.calmCount; }
+export function resetCalmCount() { _state.calmCount = 0; }
