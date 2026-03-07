@@ -5,17 +5,140 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Grounded — Panic Intervention</title>
   <link rel="stylesheet" href="styles.css" />
+
+  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+
+  <!-- <script src="https://sdk.presage.io/presage-sdk.js"></script> -->
 </head>
 <body>
 
-  <div class="start-screen">
-    <div class="start-card">
-      <h1 class="start-title">Grounded</h1>
-      <p class="start-subtitle">Real-time panic intervention.<br>Your AI-powered calm companion.</p>
-      <button class="start-btn">Begin Session</button>
-      <p class="start-note">Camera access required for sensing</p>
+  <video id="webcam" autoplay playsinline muted style="display:none;"></video>
+
+  <a-scene id="aframe-scene" embedded fog="type: exponential; color: #0d1b2a; density: 0.03">
+
+    <a-sky color="#0d1b2a"></a-sky>
+
+    <a-light type="ambient" color="#4a6fa5" intensity="0.6"></a-light>
+
+    <a-light type="directional" color="#7ec8e3" intensity="0.4"
+             position="1 3 -2"></a-light>
+
+    <a-light type="point" color="#6c63ff" intensity="0.8"
+             position="0 1.25 -4" distance="8"></a-light>
+
+    <a-entity id="stars" position="0 0 0">
+    </entity>
+
+    <a-sphere id="breathing-ball"
+              position="0 1.25 -5"
+              radius="1.25"
+              color="#6c63ff"
+              opacity="0.85"
+              metalness="0.2"
+              roughness="0.4">
+      <a-animation
+        id="breathing-anim"
+        attribute="scale"
+        dur="4000"
+        from="1 1 1"
+        to="1.6 1.6 1.6"
+        direction="alternate"
+        repeat="indefinite"
+        easing="ease-in-out-sine">
+      </a-animation>
+    </a-sphere>
+
+    <a-plane position="0 -1.5 -5"
+             rotation="-90 0 0"
+             width="30"
+             height="30"
+             color="#0a0f1e"
+             opacity="0.5">
+    </a-plane>
+
+    <a-sphere position="-4 2 -8" radius="0.3" color="#4a6fa5" opacity="0.4">
+      <a-animation attribute="position" dur="6000"
+        from="-4 2 -8" to="-4 2.8 -8"
+        direction="alternate" repeat="indefinite" easing="ease-in-out-sine">
+      </a-animation>
+    </a-sphere>
+
+    <a-sphere position="4 1.5 -7" radius="0.25" color="#7ec8e3" opacity="0.35">
+      <a-animation attribute="position" dur="7500"
+        from="4 1.5 -7" to="4 2.4 -7"
+        direction="alternate" repeat="indefinite" easing="ease-in-out-sine">
+      </a-animation>
+    </a-sphere>
+
+    <a-sphere position="0 3.5 -9" radius="0.2" color="#6c63ff" opacity="0.3">
+      <a-animation attribute="position" dur="5000"
+        from="0 3.5 -9" to="0 4.2 -9"
+        direction="alternate" repeat="indefinite" easing="ease-in-out-sine">
+      </a-animation>
+    </a-sphere>
+
+    <a-camera position="0 1.6 0" look-controls-enabled="false" wasd-controls-enabled="false">
+    </a-camera>
+
+  </a-scene>
+
+  <div class="overlay" id="overlay">
+
+    <button class="home-btn" id="home-btn" style="display:none;" title="Return to home">
+      &#8592; Home
+    </button>
+
+    <div class="calm-exit-modal" id="calm-exit-modal">
+      <div class="calm-exit-card">
+        <p>You've been calm for a while. Ready to end your session?</p>
+        <div class="calm-exit-btns">
+          <button id="calm-exit-yes">End Session</button>
+          <button id="calm-exit-no">Keep Going</button>
+        </div>
+      </div>
     </div>
+
+    <div class="status-panel" id="status-panel">
+      <div class="status-row">
+        <span class="status-label">Heart Rate</span>
+        <span class="status-badge" id="hr-badge">-- BPM</span>
+      </div>
+      <div class="status-row">
+        <span class="status-label">State</span>
+        <span class="status-badge" id="emotion-badge">Initializing...</span>
+      </div>
+      <div class="status-row">
+        <span class="status-label">Stress</span>
+        <div class="stress-bar-container">
+          <div class="stress-bar" id="stress-bar"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="session-status" id="session-status">
+      <div class="session-dot" id="session-dot"></div>
+      <span id="session-label">Starting camera...</span>
+    </div>
+
+    <div class="breathing-label" id="breathing-label">
+      <span id="breathing-text"></span>
+    </div>
+
+    <div class="intervention-container" id="intervention-container">
+      <div class="intervention-text" id="intervention-text"></div>
+    </div>
+
+    <div class="start-screen" id="start-screen">
+      <div class="start-card">
+        <h1 class="start-title">Grounded</h1>
+        <p class="start-subtitle">Real-time panic intervention.<br>Your AI-powered calm companion.</p>
+        <button class="start-btn" id="start-btn">Begin Session</button>
+        <p class="start-note">Camera access required for sensing</p>
+      </div>
+    </div>
+
   </div>
 
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>
