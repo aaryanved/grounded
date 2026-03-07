@@ -8,12 +8,14 @@ import {
   startBreathingGuide,
   stopBreathingGuide,
 } from "./breathing.js";
+import { startTherapistConversation, endTherapistConversation, isConversationActive } from "./therapist.js";
 
 initScene();
 
 const MONITOR_INTERVAL_MS      = 1000;
 const INTERVENTION_COOLDOWN_MS = 15000;
 const CALM_EXIT_READS          = 10;
+const PROLONGED_STRESS_READS   = 30; // ~30s at 1s monitor interval
 const PANIC_THRESHOLDS = {
   stressLevel: 0.6,
   emotions:    ["fearful", "angry", "disgusted", "sad", "surprised"],
@@ -25,6 +27,8 @@ let ambientStarted           = false;
 let ambientNodes             = [];
 let _calmPromptShown         = false;
 let _interventionInProgress  = false;
+let stressStreak             = 0;
+let _therapistShown          = false;
 
 const videoEl          = document.getElementById("webcam");
 const startScreen      = document.getElementById("start-screen");
@@ -79,7 +83,7 @@ async function init() {
   homeBtn.style.display = "block";
 }
 
-function stopSession() {
+async function stopSession() {
   clearInterval(monitorIntervalId);
   monitorIntervalId = null;
 
@@ -94,10 +98,15 @@ function stopSession() {
   _calmPromptShown        = false;
   _interventionInProgress = false;
   lastInterventionTime    = 0;
+  stressStreak            = 0;
+  _therapistShown         = false;
   resetCalmCount();
 
   hideInterventionText();
   hideCalmExitPrompt();
+  await endTherapistConversation();
+  hideTherapistPanel();
+  exitTherapyView();
 
   homeBtn.style.display = "none";
   startScreen.classList.remove("hidden");
@@ -116,12 +125,18 @@ function monitorLoop() {
   if (isPanic) {
     resetCalmCount();
     if (_calmPromptShown) hideCalmExitPrompt();
+    stressStreak++;
+    if (stressStreak >= PROLONGED_STRESS_READS && !_therapistShown && !isConversationActive()) {
+      showTherapistPanel();
+    }
     const now = Date.now();
-    if (now - lastInterventionTime > INTERVENTION_COOLDOWN_MS && !_interventionInProgress) {
+    if (now - lastInterventionTime > INTERVENTION_COOLDOWN_MS && !_interventionInProgress && !isConversationActive()) {
       lastInterventionTime = now;
       triggerIntervention(state);
     }
   } else {
+    stressStreak = 0;
+    if (_therapistShown) hideTherapistPanel();
     if (!_calmPromptShown && getCalmCount() >= CALM_EXIT_READS) {
       showCalmExitPrompt();
     }
@@ -209,6 +224,75 @@ function hideCalmExitPrompt() {
   _calmPromptShown = false;
   calmExitModal.classList.remove("visible");
 }
+
+function showTherapistPanel() {
+  _therapistShown = true;
+  document.getElementById("therapist-panel").classList.remove("hidden");
+}
+
+function hideTherapistPanel() {
+  _therapistShown = false;
+  document.getElementById("therapist-panel").classList.add("hidden");
+  document.getElementById("therapist-end-btn").classList.add("hidden");
+  document.getElementById("therapist-actions").classList.remove("hidden");
+  document.getElementById("therapist-status").textContent = "";
+}
+
+function enterTherapyView() {
+  pauseScanning();
+  hideTherapistPanel();
+  document.getElementById("therapy-view").classList.remove("hidden");
+  document.getElementById("therapy-view-status").textContent = "Connecting…";
+}
+
+function exitTherapyView() {
+  document.getElementById("therapy-view").classList.add("hidden");
+  document.getElementById("therapy-view-status").textContent = "";
+  if (monitorIntervalId) resumeScanning();
+  stressStreak = 0;
+  _therapistShown = false;
+}
+
+function therapistStatusHandler(status) {
+  const el = document.getElementById("therapy-view-status");
+  if (status === "connected" || status === "listening") el.textContent = "Listening…";
+  if (status === "speaking")     el.textContent = "Therapist speaking…";
+  if (status === "disconnected") exitTherapyView();
+  if (status === "error")        el.textContent = "Connection error.";
+}
+
+document.getElementById("therapist-start-btn").addEventListener("click", async () => {
+  enterTherapyView();
+  try {
+    await startTherapistConversation(therapistStatusHandler);
+  } catch {
+    document.getElementById("therapy-view-status").textContent = "Could not connect. Check mic permissions.";
+  }
+});
+
+document.getElementById("therapy-view-end-btn").addEventListener("click", async () => {
+  await endTherapistConversation();
+  exitTherapyView();
+});
+
+document.getElementById("quick-therapist-btn").addEventListener("click", async () => {
+  if (isConversationActive()) {
+    await endTherapistConversation();
+    exitTherapyView();
+    return;
+  }
+  enterTherapyView();
+  try {
+    await startTherapistConversation(therapistStatusHandler);
+  } catch {
+    document.getElementById("therapy-view-status").textContent = "Could not connect. Check mic permissions.";
+  }
+});
+
+document.getElementById("therapist-dismiss-btn").addEventListener("click", () => {
+  hideTherapistPanel();
+  stressStreak = 0;
+});
 
 function startAmbientAudio() {
   if (ambientStarted) return;

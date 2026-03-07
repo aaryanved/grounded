@@ -66,8 +66,28 @@
         <button class="start-btn" id="start-btn">Begin Session</button>
         <p class="start-note">Camera access required for sensing</p>
       </div>
+      <button id="quick-therapist-btn" class="quick-therapist-btn">
+        Talk to a therapist
+      </button>
     </div>
 
+  </div>
+
+  <div id="therapist-panel" class="therapist-panel hidden">
+    <p class="therapist-heading">You've been stressed for a while.</p>
+    <p class="therapist-subtext">Would you like to talk to someone?</p>
+    <div id="therapist-status" class="therapist-status"></div>
+    <div id="therapist-actions" class="therapist-actions">
+      <button id="therapist-start-btn" class="therapist-btn primary">Talk to someone</button>
+      <button id="therapist-dismiss-btn" class="therapist-btn secondary">Not now</button>
+    </div>
+    <button id="therapist-end-btn" class="therapist-btn danger hidden">End conversation</button>
+  </div>
+
+  <div id="therapy-view" class="therapy-view hidden">
+    <p class="therapy-view-label">You're talking with your therapist</p>
+    <div id="therapy-view-status" class="therapy-view-status"></div>
+    <button id="therapy-view-end-btn" class="therapist-btn danger">End conversation</button>
   </div>
 
   <script type="module" src="js/main.js"></script>

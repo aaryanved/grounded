@@ -411,3 +411,178 @@ canvas {
   background: rgba(107, 188, 190, 0.1);
   transform: translateY(-1px);
 }
+
+/* ── Therapist Panel ─────────────────────────────────────────────── */
+
+.therapist-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 30;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(107, 188, 190, 0.4);
+  border-radius: 20px;
+  padding: 32px 40px;
+  text-align: center;
+  max-width: 380px;
+  width: 90vw;
+  box-shadow: 0 16px 48px rgba(107, 188, 190, 0.2);
+  pointer-events: auto;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.therapist-panel.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -48%);
+}
+
+.therapist-heading {
+  font-size: 17px;
+  font-weight: 600;
+  color: #2a5a62;
+  margin-bottom: 8px;
+}
+
+.therapist-subtext {
+  font-size: 14px;
+  color: #6a9aa2;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.therapist-status {
+  font-size: 13px;
+  font-style: italic;
+  color: #8ab0b8;
+  min-height: 20px;
+  margin-bottom: 16px;
+}
+
+.therapist-status.speaking {
+  animation: pulse-text 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse-text {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+.therapist-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.therapist-btn {
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
+  border: none;
+}
+
+.therapist-btn.hidden {
+  display: none;
+}
+
+.therapist-btn.primary {
+  background: linear-gradient(135deg, #6BBCBE, #8DCDD4);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(107, 188, 190, 0.4);
+}
+
+.therapist-btn.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(107, 188, 190, 0.55);
+}
+
+.therapist-btn.secondary {
+  background: transparent;
+  color: #6a9aa2;
+  border: 1px solid rgba(107, 188, 190, 0.4);
+}
+
+.therapist-btn.secondary:hover {
+  background: rgba(107, 188, 190, 0.1);
+  transform: translateY(-1px);
+}
+
+.therapist-btn.danger {
+  background: rgba(220, 100, 80, 0.12);
+  color: #c0622a;
+  border: 1px solid rgba(220, 100, 80, 0.3);
+}
+
+.therapist-btn.danger:hover {
+  background: rgba(220, 100, 80, 0.22);
+  transform: translateY(-1px);
+}
+
+/* ── Therapy View (full-screen overlay) ──────────────────────────── */
+
+.therapy-view {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background: rgba(212, 238, 242, 0.72);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  transition: opacity 0.5s ease;
+}
+
+.therapy-view.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.therapy-view-label {
+  font-size: 20px;
+  font-weight: 600;
+  color: #2a5a62;
+  letter-spacing: 0.01em;
+}
+
+.therapy-view-status {
+  font-size: 14px;
+  font-style: italic;
+  color: #6a9aa2;
+  min-height: 20px;
+}
+
+/* ── Quick Therapist Button (landing page) ───────────────────────── */
+
+.quick-therapist-btn {
+  position: absolute;
+  bottom: 28px;
+  left: 28px;
+  padding: 9px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6BBCBE;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(107, 188, 190, 0.4);
+  border-radius: 50px;
+  cursor: pointer;
+  pointer-events: auto;
+  letter-spacing: 0.03em;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 16px rgba(107, 188, 190, 0.15);
+}
+
+.quick-therapist-btn:hover {
+  background: rgba(107, 188, 190, 0.12);
+  box-shadow: 0 6px 20px rgba(107, 188, 190, 0.3);
+}
