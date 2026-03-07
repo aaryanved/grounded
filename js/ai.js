@@ -1,10 +1,6 @@
 import { GEMINI_API_KEY, GEMINI_MODEL as CONFIG_MODEL } from "../config.js";
 
-// choose a model that is known to be available.  `gemini-pro` turned out to
-// return 404 for the key we're using, which means the model isn't enabled for
-// the project.  keep the model configurable via config.js so you can swap it
-// without editing source.
-const DEFAULT_MODEL = "gemini-2.5-flash"; // stable model with generous free-tier quota
+const DEFAULT_MODEL = "gemini-2.5-flash";
 const GEMINI_MODEL = CONFIG_MODEL || DEFAULT_MODEL;
 const GEMINI_ENDPOINT =
   `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
@@ -38,15 +34,8 @@ Respond ONLY with the instruction text — no titles, no labels, plain calming w
 
 
 export async function generateCalmingInstruction(userState) {
-  // The previous implementation would bail out early if the key looked
-  // empty or if somebody copied the placeholder from the example config.
-  // In practice the key can be undefined in the build/bundle step, or CORS
-  // may reject the request; by attempting the call regardless we get a more
-  // useful error message in the console and can debug why the network is
-  // failing.  We still fall back on any failure, but we no longer short‑circuit.
   if (!GEMINI_API_KEY || GEMINI_API_KEY === "YOUR_GEMINI_API_KEY") {
-    console.warn(
-      "[ai] Gemini API key appears unset (value=", GEMINI_API_KEY, ")");
+    console.warn("[ai] Gemini API key appears unset (value=", GEMINI_API_KEY, ")");
   }
 
   const level = getInterventionLevel(userState);
@@ -83,7 +72,7 @@ export async function generateCalmingInstruction(userState) {
     if (!response.ok) {
       if (response.status === 404) {
         console.error(
-          `[ai] Gemini model \"${GEMINI_MODEL}\" not found. ` +
+          `[ai] Gemini model "${GEMINI_MODEL}" not found. ` +
             "Check that the model name is correct and enabled for your API key."
         );
       }

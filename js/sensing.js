@@ -72,7 +72,6 @@ export function getUserState() {
   return {
     emotion:     _state.emotion,
     stressLevel: parseFloat(_state.stressLevel.toFixed(3)),
-    // expose raw expression scores for advanced logic if needed
     expressions: { ..._state.expressions },
   };
 }

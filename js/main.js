@@ -149,7 +149,6 @@ async function triggerIntervention(state) {
       console.error("[main] Speech failed:", err);
     }
 
-    // Hide text immediately when voice finishes (speak() waits for audio to end)
     hideInterventionText();
 
     sessionDot.className     = "session-dot active";
