@@ -1,17 +1,14 @@
 const _state = { emotion: "neutral", stressLevel: 0, ready: false };
 
-const EMOTION_STRESS_MAP = {
-  fearful:   1.0,
-  angry:     0.85,
-  disgusted: 0.7,
-  sad:       0.6,
-  surprised: 0.5,
-  neutral:   0.2,
-  happy:     0.1,
-};
-
-function computeStressLevel(emotion) {
-  return EMOTION_STRESS_MAP[emotion] ?? 0.2;
+function computeStressFromExpressions(expr) {
+  const score =
+    (expr.fearful   ?? 0) * 1.0 +
+    (expr.angry     ?? 0) * 0.85 +
+    (expr.disgusted ?? 0) * 0.7 +
+    (expr.sad       ?? 0) * 0.5 +
+    (expr.surprised ?? 0) * 0.35 -
+    (expr.happy     ?? 0) * 0.3;
+  return Math.min(Math.max(score * 3.0, 0), 1);
 }
 
 export async function initCamera(videoEl) {
@@ -35,12 +32,20 @@ export async function loadModels(videoEl) {
       .detectSingleFace(videoEl, new faceapi.TinyFaceDetectorOptions())
       .withFaceLandmarks(true)
       .withFaceExpressions();
-    if (result) {
-      const dominant = Object.entries(result.expressions)
-        .sort(([, a], [, b]) => b - a)[0][0];
-      _state.emotion     = dominant;
-      _state.stressLevel = computeStressLevel(dominant);
+
+    if (!result) {
+      console.log("[sensing] No face detected");
+      return;
     }
+
+    const dominant = Object.entries(result.expressions)
+      .sort(([, a], [, b]) => b - a)[0][0];
+    const stress = computeStressFromExpressions(result.expressions);
+
+    console.log(`[sensing] emotion=${dominant} stress=${stress.toFixed(3)}`, result.expressions);
+
+    _state.emotion     = dominant;
+    _state.stressLevel = stress;
   }, 1000);
 
   _state.ready = true;

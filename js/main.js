@@ -152,13 +152,6 @@ async function triggerIntervention(state) {
   sessionLabel.textContent = "Monitoring active";
 }
 
-function getCalmLabel(stressLevel) {
-  if (stressLevel < 0.2)  return "Very Calm";
-  if (stressLevel < 0.4)  return "Calm";
-  if (stressLevel < 0.65) return "Mildly Stressed";
-  if (stressLevel < 0.85) return "Stressed";
-  return "Very Stressed";
-}
 
 function _stressClass(stressLevel) {
   if (stressLevel >= 0.65) return "high";
@@ -167,11 +160,9 @@ function _stressClass(stressLevel) {
 }
 
 function updateOverlay(state) {
-  const label = getCalmLabel(state.stressLevel);
-  emotionBadge.textContent = label;
+  emotionBadge.textContent = `${state.emotion} · ${Math.round(state.stressLevel * 100)}%`;
   emotionBadge.className   = "status-badge " + _stressClass(state.stressLevel);
-
-  stressBar.style.width = `${Math.round(state.stressLevel * 100)}%`;
+  stressBar.style.width    = `${Math.round(state.stressLevel * 100)}%`;
 }
 
 function updateSessionStatus(label, active) {
