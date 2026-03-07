@@ -13,13 +13,33 @@ body {
   width: 100vw;
 }
 
-a-scene {
+canvas {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   z-index: 0;
+}
+
+#vig {
+  position: fixed; inset: 0; pointer-events: none; z-index: 1;
+  background: radial-gradient(ellipse 82% 78% at 50% 48%,
+    transparent 28%,
+    rgba(16, 34, 12, 0.10) 58%,
+    rgba(8, 22, 6, 0.35) 100%);
+}
+
+#bloom {
+  position: fixed; inset: 0; pointer-events: none; z-index: 1;
+  background: radial-gradient(ellipse 60% 50% at 50% 45%,
+    rgba(155, 205, 130, 0.07) 0%, transparent 68%);
+}
+
+#grain {
+  position: fixed; inset: 0; pointer-events: none; z-index: 2; opacity: 0.018;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px;
 }
 
 .overlay {
@@ -219,7 +239,7 @@ a-scene {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(212, 238, 242, 0.6);
+  background: rgba(212, 238, 242, 0.45);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   pointer-events: auto;
