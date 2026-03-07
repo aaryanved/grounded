@@ -2,20 +2,19 @@
 
 Real-time panic intervention web app built for **Hack Canada 2026**.
 
-Grounded uses your webcam to read biometrics in real time (heart rate, stress level) via the Presage SDK, then responds with AI-generated calming instructions, therapeutic breathing guidance, and ElevenLabs voice output — all inside an immersive A-Frame WebXR environment.
+Grounded uses your webcam to detect stress and emotional state via facial expression analysis, then responds with AI-generated calming instructions, therapeutic breathing guidance, and ElevenLabs voice output — all inside an immersive A-Frame WebXR environment.
 
 ---
 
 ## Features
 
-- Real-time heart rate and stress monitoring via Presage SDK (camera-based rPPG)
-- Three-tier intervention system triggered by biometric thresholds
-- AI-generated calming instructions via Gemini API
+- Real-time facial expression analysis via face-api.js (TinyFaceDetector)
+- Three-tier intervention system triggered by stress thresholds
+- AI-generated calming instructions via Gemini 2.5 Flash
 - ElevenLabs neural TTS voice output (fallback: Web Speech API)
 - Animated breathing sphere with phase-synced text labels
 - Generative ambient soundscape (Web Audio API — no audio files needed)
 - Calm/stress scale display — no clinical emotion labels shown to user
-- Demo mode: runs without Presage credentials using simulated biometrics
 - Pure HTML/CSS/JS ES modules — no build step required
 
 ---
@@ -25,10 +24,10 @@ Grounded uses your webcam to read biometrics in real time (heart rate, stress le
 ```
 Browser
 ├── index.html          A-Frame scene + overlay UI
-├── styles.css          Dark glassmorphism theme
+├── styles.css          Pastel glassmorphism theme
 └── js/
     ├── main.js         Control loop, ambient audio, intervention orchestration
-    ├── sensing.js      Presage SDK integration + demo mode fallback
+    ├── sensing.js      face-api.js integration, stress computation
     ├── ai.js           Gemini REST API — calming instruction generation
     ├── voice.js        ElevenLabs TTS REST API + Web Speech fallback
     └── breathing.js    A-Frame animation control + breathing label cycling
@@ -37,9 +36,9 @@ Browser
 Data flow:
 
 ```
-Camera → Presage SDK → sensing.js (HR + stress)
+Camera → face-api.js → sensing.js (emotion + stress)
                               ↓
-                         main.js (monitor loop, 1.5s)
+                         main.js (monitor loop, 1s)
                               ↓
               ┌───────────────┴────────────────┐
          ai.js (Gemini)               breathing.js (sphere)
@@ -54,13 +53,13 @@ Camera → Presage SDK → sensing.js (HR + stress)
 | File | Purpose |
 |---|---|
 | `index.html` | A-Frame 1.4.0 scene, overlay UI panels, start screen |
-| `styles.css` | Dark glassmorphism theme, status panel, breathing label |
+| `styles.css` | Pastel glassmorphism theme, status panel, breathing label |
 | `js/main.js` | Entry point, monitoring loop, ambient audio, intervention logic |
-| `js/sensing.js` | Presage SDK init, demo mode simulation, `getUserState()` |
+| `js/sensing.js` | face-api.js init, expression → stress computation, `getUserState()` |
 | `js/ai.js` | Gemini API prompt building and response parsing |
 | `js/voice.js` | ElevenLabs TTS, Web Speech fallback, shared AudioContext |
 | `js/breathing.js` | Breathing sphere speed, color, and phase label cycling |
-| `config.example.js` | API key template — copy to `config.js` and fill in |
+| `config.js` | API keys (gitignored — copy from `config.example.js`) |
 
 ---
 
@@ -81,20 +80,10 @@ Open `config.js` and replace the placeholder values:
 ```js
 export const GEMINI_API_KEY     = "your-gemini-key";
 export const ELEVENLABS_API_KEY = "your-elevenlabs-key";
-export const PRESAGE_API_KEY    = "your-presage-key";
+export const GEMINI_MODEL       = "gemini-2.5-flash";
 ```
 
-### 3. (Optional) Add Presage SDK
-
-If you have Presage credentials, add the SDK script tag to `index.html`:
-
-```html
-<script src="https://sdk.presage.io/presage-sdk.js"></script>
-```
-
-Without this, the app automatically runs in **demo mode** with simulated biometrics.
-
-### 4. Serve locally
+### 3. Serve locally
 
 ```bash
 python3 -m http.server 8080
@@ -112,20 +101,6 @@ Open `http://localhost:8080` in Chrome and allow camera access.
 |---|---|---|
 | Google Gemini | `GEMINI_API_KEY` | [Google AI Studio](https://aistudio.google.com) |
 | ElevenLabs | `ELEVENLABS_API_KEY` | [ElevenLabs dashboard](https://elevenlabs.io) |
-| Presage | `PRESAGE_API_KEY` | [Presage developer portal](https://presage.io) |
-
----
-
-## Demo Mode
-
-If the Presage SDK script is not present, `sensing.js` automatically falls back to demo mode:
-
-- Heart rate oscillates between ~46–90 BPM using a sine wave
-- Emotions cycle through `neutral → neutral → fear → fear → sad → neutral → calm`
-- Updates every **500ms** so stress bar and state badge respond quickly
-- Stress thresholds are still evaluated, so interventions trigger normally
-
-No configuration needed — demo mode activates automatically.
 
 ---
 
@@ -133,17 +108,15 @@ No configuration needed — demo mode activates automatically.
 
 | Level | Trigger | Response type |
 |---|---|---|
-| 1 | HR > 90 or stress > 0.6 | Box breathing instruction (4-4-4-4) |
-| 2 | HR > 100 or stress > 0.75 | 5-4-3-2-1 grounding exercise |
-| 3 | HR > 115 or stress > 0.9 | Verbal reassurance and stabilization |
+| 1 | stress > 0.6 | Breathing instruction |
+| 2 | stress > 0.75 | 5-4-3-2-1 grounding exercise |
+| 3 | stress > 0.9 | Verbal reassurance |
 
-A 30-second cooldown prevents repeated interventions. The breathing sphere color and speed also update to match the current stress level.
+A 15-second cooldown prevents repeated interventions. An `_interventionInProgress` flag prevents duplicate Gemini calls if the API response takes longer than the cooldown window.
 
 ---
 
 ## Calm/Stress Scale
-
-The status panel displays a calm/stress label derived from the computed stress value (0–1):
 
 | Stress range | Label shown |
 |---|---|
@@ -153,7 +126,19 @@ The status panel displays a calm/stress label derived from the computed stress v
 | 0.65 – 0.85 | Stressed |
 | 0.85 – 1.00 | Very Stressed |
 
-Internal emotion labels (from the Presage SDK) are used only for stress computation — they are never displayed to the user.
+---
+
+## Theme
+
+Pastel calm palette across all UI elements and the A-Frame scene.
+
+| Role | Color |
+|---|---|
+| Background | `#D4EEF2` (powder blue) |
+| Primary accent / buttons | `#6BBCBE` (teal) |
+| Calm indicator | `#88C65A` (green) |
+| Moderate stress | `#FDEAAA` (pale yellow) |
+| High stress | `#F5B87A` (peach) |
 
 ---
 
@@ -162,9 +147,18 @@ Internal emotion labels (from the Presage SDK) are used only for stress computat
 | Layer | Technology |
 |---|---|
 | 3D environment | A-Frame 1.4.0 (WebXR) |
-| Biometric sensing | Presage SDK (camera rPPG) |
-| AI instructions | Google Gemini API (`gemini-pro`) |
-| Voice output | ElevenLabs TTS (Rachel voice) / Web Speech API |
+| Expression sensing | face-api.js (TinyFaceDetector) |
+| AI instructions | Google Gemini 2.5 Flash |
+| Voice output | ElevenLabs TTS / Web Speech API |
 | Ambient audio | Web Audio API (generative, no files) |
 | Frontend | Vanilla HTML/CSS/JS ES modules |
 | Serving | Python `http.server` (any static server) |
+
+---
+
+## Recent Updates
+
+- **Gemini 2.5 Flash** — upgraded from preview model; better free-tier quota and lower latency
+- **Duplicate intervention guard** — `_interventionInProgress` flag prevents a second Gemini call when the API is slow and the cooldown window expires mid-response
+- **Pastel theme** — full UI and A-Frame scene rethemed to powder blue, teal, peach, and sage green
+- **Removed all source comments** — clean production-ready codebase
