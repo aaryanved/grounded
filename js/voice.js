@@ -1,6 +1,6 @@
 import { ELEVENLABS_API_KEY } from "../config.js";
 
-const VOICE_ID = "21m00Tcm4TlvDq8ikWAM";
+const VOICE_ID = "pHDas0XaKmHDkNMCKsnc";
 
 const ELEVENLABS_ENDPOINT = `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`;
 

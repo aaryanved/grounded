@@ -1,7 +1,13 @@
-import { GEMINI_API_KEY } from "../config.js";
+import { GEMINI_API_KEY, GEMINI_MODEL as CONFIG_MODEL } from "../config.js";
 
+// choose a model that is known to be available.  `gemini-pro` turned out to
+// return 404 for the key we're using, which means the model isn't enabled for
+// the project.  keep the model configurable via config.js so you can swap it
+// without editing source.
+const DEFAULT_MODEL = "gemini-3-flash-preview"; // previously working in repo history
+const GEMINI_MODEL = CONFIG_MODEL || DEFAULT_MODEL;
 const GEMINI_ENDPOINT =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+  `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 function getInterventionLevel(userState) {
   const { heartRate, stressLevel } = userState;
@@ -19,42 +25,39 @@ function getCalmDescriptor(stressLevel) {
 }
 
 function buildPrompt(userState, level) {
-  const { heartRate, stressLevel } = userState;
-  const stressPct   = Math.round(stressLevel * 10);
-  const calmLabel   = getCalmDescriptor(stressLevel);
+  const { heartRate, stressLevel, emotion } = userState;
+  const stressPct = Math.round(stressLevel * 10);
+  const calmLabel = getCalmDescriptor(stressLevel);
 
-  const levelDescriptions = {
-    1: `Generate one short, warm breathing instruction (max 2 sentences).
-        Focus on box breathing: breathe in for 4 counts, hold, breathe out for 4 counts.
-        Use gentle, reassuring language.`,
-    2: `Generate a 5-4-3-2-1 grounding exercise prompt (max 3 sentences).
-        Ask the user to notice 5 things they can see, 4 they can touch, etc.
-        Keep it concise and grounding.`,
-    3: `Generate a short, deeply reassuring verbal stabilization message (max 2 sentences).
-        Tell the user they are safe, they will get through this, and guide them toward slower breathing.
-        Be warm, human, and calming.`,
-  };
-
-  return `You are a compassionate real-time panic intervention assistant.
-A user is currently experiencing distress with the following biometrics:
-- Heart rate: ${heartRate} BPM
-- Calm level: ${calmLabel} (${stressPct}/10 stress)
-
-${levelDescriptions[level]}
-Respond ONLY with the instruction text — no titles, no labels, no quotes. Plain calming text only.`;
+  return `You are a warm, compassionate grounding companion. A person is feeling ${emotion || "distressed"} right now.
+Their stress level is ${calmLabel} (${stressPct}/10) and heart rate is around ${heartRate} BPM.
+Give ONE short, comforting grounding or breathing cue (max 2 sentences). Keep it simple, warm, and actionable.
+Vary your suggestions — try different techniques like slow breathing, body awareness, sensory focus, or reassurance.
+Respond ONLY with the instruction text — no titles, no labels, plain calming words only.`;
 }
 
+
 export async function generateCalmingInstruction(userState) {
+  // The previous implementation would bail out early if the key looked
+  // empty or if somebody copied the placeholder from the example config.
+  // In practice the key can be undefined in the build/bundle step, or CORS
+  // may reject the request; by attempting the call regardless we get a more
+  // useful error message in the console and can debug why the network is
+  // failing.  We still fall back on any failure, but we no longer short‑circuit.
   if (!GEMINI_API_KEY || GEMINI_API_KEY === "YOUR_GEMINI_API_KEY") {
-    console.warn("[ai] Gemini API key not set. Using fallback instruction.");
-    return _fallbackInstruction(userState);
+    console.warn(
+      "[ai] Gemini API key appears unset (value=", GEMINI_API_KEY, ")");
   }
 
-  const level  = getInterventionLevel(userState);
+  const level = getInterventionLevel(userState);
   const prompt = buildPrompt(userState, level);
+  console.log("[ai] calling Gemini model=", GEMINI_MODEL, "endpoint=", GEMINI_ENDPOINT);
+  console.log("[ai] prompt=", prompt);
 
   try {
-    const response = await fetch(`${GEMINI_ENDPOINT}?key=${GEMINI_API_KEY}`, {
+    const url = `${GEMINI_ENDPOINT}?key=${GEMINI_API_KEY}`;
+    console.log("[ai] full request url: ", url);
+    const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -65,7 +68,7 @@ export async function generateCalmingInstruction(userState) {
         ],
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 100,
+          maxOutputTokens: 1000,
           topP: 0.9,
         },
         safetySettings: [
@@ -78,6 +81,12 @@ export async function generateCalmingInstruction(userState) {
     });
 
     if (!response.ok) {
+      if (response.status === 404) {
+        console.error(
+          `[ai] Gemini model \"${GEMINI_MODEL}\" not found. ` +
+            "Check that the model name is correct and enabled for your API key."
+        );
+      }
       throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
     }
 
