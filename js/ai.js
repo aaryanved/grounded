@@ -40,20 +40,18 @@ export async function generateCalmingInstruction(userState) {
   console.log("[ai] prompt=", prompt);
 
   try {
-    const response = await fetch(GEMINI_ENDPOINT, {
+    const response = await fetch("/api/gemini", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-      }),
+      body: JSON.stringify({ prompt }),
     });
 
     if (!response.ok) {
-      throw new Error(`Gemini error: ${response.status}`);
+      throw new Error(`Gemini proxy error: ${response.status}`);
     }
 
     const data = await response.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    const text = data?.text?.trim();
 
     if (!text) throw new Error("Empty response from Gemini");
 
