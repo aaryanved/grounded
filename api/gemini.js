@@ -4,7 +4,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { prompt } = req.body;
+    const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+    const { prompt } = body;
 
     const model = process.env.GEMINI_MODEL || "gemini-1.5-flash";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`;
