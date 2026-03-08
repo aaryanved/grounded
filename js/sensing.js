@@ -22,7 +22,7 @@ export async function initCamera(videoEl) {
 }
 
 export async function loadModels(videoEl) {
-  const MODEL_URL = "https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights";
+  const MODEL_URL = "/models";
   await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
   await faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL);
   await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);

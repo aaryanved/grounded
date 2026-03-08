@@ -1,9 +1,6 @@
 # API key
 .env
 
-# Face Scanning Models
-models/
-
 docs/
 
 .DS_Store
