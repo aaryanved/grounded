@@ -1,6 +1,9 @@
-import { GEMINI_API_KEY, GEMINI_MODEL } from "../config.js";
+import { GEMINI_API_KEY, GEMINI_MODEL as CONFIG_MODEL } from "../config.js";
 
-const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+const DEFAULT_MODEL = "gemini-2.5-flash";
+const GEMINI_MODEL = CONFIG_MODEL || DEFAULT_MODEL;
+const GEMINI_ENDPOINT =
+  `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 function getInterventionLevel(userState) {
   const { heartRate, stressLevel } = userState;
@@ -35,23 +38,49 @@ export async function generateCalmingInstruction(userState) {
     console.warn("[ai] Gemini API key appears unset (value=", GEMINI_API_KEY, ")");
   }
 
-  const prompt = buildPrompt(userState, getInterventionLevel(userState));
+  const level = getInterventionLevel(userState);
+  const prompt = buildPrompt(userState, level);
   console.log("[ai] calling Gemini model=", GEMINI_MODEL, "endpoint=", GEMINI_ENDPOINT);
   console.log("[ai] prompt=", prompt);
 
   try {
-    const response = await fetch("/api/gemini", {
+    const url = `${GEMINI_ENDPOINT}?key=${GEMINI_API_KEY}`;
+    console.log("[ai] full request url: ", url);
+    const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [{ text: prompt }],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1000,
+          topP: 0.9,
+        },
+        safetySettings: [
+          { category: "HARM_CATEGORY_HARASSMENT",        threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_HATE_SPEECH",       threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+        ],
+      }),
     });
 
     if (!response.ok) {
-      throw new Error(`Gemini proxy error: ${response.status}`);
+      if (response.status === 404) {
+        console.error(
+          `[ai] Gemini model "${GEMINI_MODEL}" not found. ` +
+            "Check that the model name is correct and enabled for your API key."
+        );
+      }
+      throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
-    const text = data?.text?.trim();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
     if (!text) throw new Error("Empty response from Gemini");
 
