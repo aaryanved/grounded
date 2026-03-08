@@ -30,7 +30,7 @@ Browser
     ├── sensing.js      face-api.js integration, stress computation
     ├── ai.js           Gemini REST API — calming instruction generation
     ├── voice.js        ElevenLabs TTS REST API + Web Speech fallback
-    └── breathing.js    A-Frame animation control + breathing label cycling
+    └── breathing.js    Breathing label cycling
 ```
 
 Data flow:
@@ -52,14 +52,13 @@ Camera → face-api.js → sensing.js (emotion + stress)
 
 | File | Purpose |
 |---|---|
-| `index.html` | A-Frame 1.4.0 scene, overlay UI panels, start screen |
+| `index.html` | Three.js scene, overlay UI panels, start screen |
 | `styles.css` | Pastel glassmorphism theme, status panel, breathing label |
 | `js/main.js` | Entry point, monitoring loop, ambient audio, intervention logic |
 | `js/sensing.js` | face-api.js init, expression → stress computation, `getUserState()` |
 | `js/ai.js` | Gemini API prompt building and response parsing |
 | `js/voice.js` | ElevenLabs TTS, Web Speech fallback, shared AudioContext |
 | `js/breathing.js` | Breathing sphere speed, color, and phase label cycling |
-| `config.js` | API keys (gitignored — copy from `config.example.js`) |
 
 ---
 
@@ -109,8 +108,7 @@ Open `http://localhost:8080` in Chrome and allow camera access.
 | Level | Trigger | Response type |
 |---|---|---|
 | 1 | stress > 0.6 | Breathing instruction |
-| 2 | stress > 0.75 | 5-4-3-2-1 grounding exercise |
-| 3 | stress > 0.9 | Verbal reassurance |
+| 2 | stress > 0.9 | Verbal reassurance |
 
 A 15-second cooldown prevents repeated interventions. An `_interventionInProgress` flag prevents duplicate Gemini calls if the API response takes longer than the cooldown window.
 
@@ -121,24 +119,10 @@ A 15-second cooldown prevents repeated interventions. An `_interventionInProgres
 | Stress range | Label shown |
 |---|---|
 | 0.00 – 0.20 | Very Calm |
-| 0.20 – 0.40 | Calm |
-| 0.40 – 0.65 | Mildly Stressed |
+| 0.20 – 0.45 | Calm |
+| 0.45 – 0.65 | Mildly Stressed |
 | 0.65 – 0.85 | Stressed |
 | 0.85 – 1.00 | Very Stressed |
-
----
-
-## Theme
-
-Pastel calm palette across all UI elements and the A-Frame scene.
-
-| Role | Color |
-|---|---|
-| Background | `#D4EEF2` (powder blue) |
-| Primary accent / buttons | `#6BBCBE` (teal) |
-| Calm indicator | `#88C65A` (green) |
-| Moderate stress | `#FDEAAA` (pale yellow) |
-| High stress | `#F5B87A` (peach) |
 
 ---
 
@@ -146,7 +130,7 @@ Pastel calm palette across all UI elements and the A-Frame scene.
 
 | Layer | Technology |
 |---|---|
-| 3D environment | A-Frame 1.4.0 (WebXR) |
+| 3D environment | Three.js (WebXR) |
 | Expression sensing | face-api.js (TinyFaceDetector) |
 | AI instructions | Google Gemini 2.5 Flash |
 | Voice output | ElevenLabs TTS / Web Speech API |
