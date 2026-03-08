@@ -1,4 +1,6 @@
+import { GEMINI_API_KEY, GEMINI_MODEL } from "../config.js";
 
+const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
 function getInterventionLevel(userState) {
   const { heartRate, stressLevel } = userState;
