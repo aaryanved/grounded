@@ -35,24 +35,25 @@ export async function generateCalmingInstruction(userState) {
     console.warn("[ai] Gemini API key appears unset (value=", GEMINI_API_KEY, ")");
   }
 
-  const level = getInterventionLevel(userState);
-  const prompt = buildPrompt(userState, level);
+  const prompt = buildPrompt(userState, getInterventionLevel(userState));
   console.log("[ai] calling Gemini model=", GEMINI_MODEL, "endpoint=", GEMINI_ENDPOINT);
   console.log("[ai] prompt=", prompt);
 
   try {
-    const response = await fetch("/api/gemini", {
+    const response = await fetch(GEMINI_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+      }),
     });
 
     if (!response.ok) {
-      throw new Error(`Gemini proxy error: ${response.status}`);
+      throw new Error(`Gemini error: ${response.status}`);
     }
 
     const data = await response.json();
-    const text = data?.text?.trim();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
     if (!text) throw new Error("Empty response from Gemini");
 
